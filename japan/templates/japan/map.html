@@ -1,0 +1,58 @@
+{% load static %}
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type="text/css" href="{% static 'japan/css/style.css' %}">
+
+        <!-- leaflet css -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.2/dist/leaflet.css"
+         integrity="sha256-sA+zWATbFveLLNqWO2gtiw3HL/lh1giY/Inf1BJ0z14="
+         crossorigin=""/>
+
+        <!-- Make sure you put this AFTER Leaflet's CSS -->
+        <script src="https://unpkg.com/leaflet@1.9.2/dist/leaflet.js"
+         integrity="sha256-o9N1jGDZrf5tS+Ft4gbIK7mYMipq9lqpVJ91xHSyKhg="
+         crossorigin=""></script>
+
+        <title>ポリゴン・地番サンプルアプリ</title>
+    </head>
+    <body>
+        <form method="POST">
+            {% csrf_token %}
+            <label>
+                <input type="text" name="farmland_pin_address">
+            </label>
+            <button type="submit">農地ピンの住所</button>
+        </form>
+        <input type="button" value="戻る" onClick="javascript:history.go(-1);">
+        <div id="map"></div>
+
+        <script>
+            let map = L.map('map').setView([43.03, 141.31], 11);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            {% autoescape off %}
+            // let polygons = {{polygons}};
+            // let mpoly_data = {{mpoly_data}}
+            let lat = {{ lat }}
+            let long = {{ long }}
+            let address = {{address}}
+            let coordinates = {{coordinates}}
+            {% endautoescape %}
+            // let lat = coordinate['coordinates'][0][0][0][1]
+            // let lon = coordinate['coordinates'][0][0][0][0]
+            L.geoJSON(coordinates).addTo(map);
+            // L.geoJSON(test2).addTo(map);
+            // L.marker([lat, long]).addTo(map);
+            L.popup().setLatLng([lat, long]).setContent(address).openOn(map);
+            if (lat && long) {
+                map.setView([lat, long], 16);
+            }
+        </script>
+    </body>
+</html>
