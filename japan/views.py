@@ -65,7 +65,7 @@ def map_view(request):
 # wagriの会員IDとパスワードからapi用の認証トークンを取得
 def get_wagri_auth_token():
     auth_url = 'https://api.wagri.net/Token'
-    wagri_id = 'grant_type=client_credentials&client_id=fcb04d4d-72da-4965-8076-f655ebb7f966&client_secret=SAgri2018'
+    wagri_id = 'askme'
     auth_token = requests.post(auth_url, wagri_id).json()['access_token']
     return auth_token
 
