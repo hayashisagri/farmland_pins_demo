@@ -22,12 +22,12 @@ def map_view(request):
         入力された地番（cleaned_input_address）を使用して、data.pyのデータを検索し、
         一致した地番のオブジェクトから緯度、経度を取得している。
         実際にはRDBにデータは保管予定なので修正の必要あり。
-        
+
         緯度経度の順番に注意、containsで検索できなくなる
-        
+
         農地ピンの測地系 JGD2000(?) SRID4612
         筆ポリゴンの測地系 JGD2011 SRID6668
-        
+
         1. 検索部分を引数で受け取り、該当するポリゴンを戻値で返す
         2. 都道府県と市区町村（オプション）、retry可能にする（再検索）
         """
@@ -79,18 +79,20 @@ def get_farmland_pins_by_city_code(city_code, auth_token):
 
 
 # wagriから取得した農地ピンをマスターテーブルに保存する
+# shellで中身を一行ずつ読み込んだら動くのに関数を呼んだらエラーになる、なぜ。。。pin = farmland_pins[i]
+# TypeError: 'list' object is not callable
 def load_farmland_pins():
-    auth_token = get_wagri_auth_token()
-    city_code = 000000
-    farmland_pins = get_farmland_pins_by_city_code(city_code, auth_token)
+    # auth_token = get_wagri_auth_token()
+    # city_code = 000000
+    farmland_pins = SAPPORO_POLYGONS
     objs = []
     for i in range(len(farmland_pins)):
-        pin = farmland_pins(i)
+        pin = farmland_pins[i]
         obj = FarmlandPinOriginals(
-            city_code=pin['city_code'],
-            latitude=pin['latitude'],
-            longitude=pin['longitude'],
-            address=pin['address'],
+            city_code=pin['CityCode'],
+            latitude=pin['Latitude'],
+            longitude=pin['Longitude'],
+            address=pin['Address'],
         )
         objs.append(obj)
 
@@ -98,19 +100,45 @@ def load_farmland_pins():
 
 
 # 住所などから農地ピンを取得する
-def get_farmland_pins_by_address():
-    return
+def get_farmland_pins_by_address(prefecture, city, address):
+    if address:
+        try:
+            pin = FarmlandPinOriginals.objects.filter(address='北海道札幌市北区新川743-3')
+            return pin
+        except:
+            print('invalid value is given')
+    elif city:
+        try:
+            pins = FarmlandPinOriginals.objects.filter(address__contains=city)
+            return pins
+        except:
+            print('invalid value is given')
+    elif prefecture:
+        try:
+            pins = FarmlandPinOriginals.objects.filter(address__contains=prefecture)
+            return pins
+        except:
+            print('invalid value is given')
+    raise  # 例外処理
 
 
 # 農地ピンのリストをキーに、ポリゴンのリストを取得する
 def get_polygons_by_farmland_pins():
+    search_input = 'sample address'  # 検索ワード、都道府県名や住所など
+    pins = get_farmland_pins_by_address(prefecture='', city='', address=search_input)
     polygons = []
-    polygon = get_polygon_by_farmland_pin()
-    polygons.append(polygon)
-    return
+    for pin in pins:
+        polygon = get_polygon_by_farmland_pin(pin)
+        polygons.append(polygon)
+    return polygons
 
 
 # 個別の農地ピンをキーに個別のポリゴンを取得する
 def get_polygon_by_farmland_pin(pin):
-    polygon = ピンからポリゴンを検索
+    # Decimal('43.04352666500010116')
+    # 緯度経度のみを取り出して、座標として設定する方法がわからない
+    # pnt = Point(pnt.longitude, pnt.latitude)
+    # TypeError: Invalid parameters given for Point initialization.
+    pnt = Point(pin.longitude, pin.latitude)
+    polygon = JapanPolygon.objects.get(mpoly__contains=pnt).mpoly.json
     return polygon
